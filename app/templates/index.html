@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Booking System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-ticket text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">TicketEase</h1>
+                    <p class="text-xs text-slate-400">Phase 1 Web UI</p>
+                </div>
+            </div>
+
+            <!-- User Selector / Creator -->
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <label for="user-select" class="text-xs text-slate-400 font-medium">Active User:</label>
+                    <select id="user-select" onchange="changeUser(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">Loading Users...</option>
+                    </select>
+                </div>
+                <button onclick="toggleRegisterModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-user-plus text-slate-400"></i>
+                    <span>New User</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alert Banner Container -->
+    <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-4 hidden">
+        <div id="alert-banner" class="flex items-center justify-between p-4 rounded-xl border">
+            <div class="flex items-center space-x-3">
+                <span id="alert-icon" class="text-lg"></span>
+                <p id="alert-message" class="text-sm font-medium"></p>
+            </div>
+            <button onclick="dismissAlert()" class="text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Column 1: Events List -->
+        <section class="lg:col-span-1 flex flex-col space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-days text-brand-500"></i>
+                    <span>Upcoming Events</span>
+                </h2>
+                <button onclick="toggleEventModal(true)" class="text-xs text-brand-500 hover:text-brand-600 font-semibold flex items-center space-x-1">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Event</span>
+                </button>
+            </div>
+            
+            <div id="events-list" class="space-y-3 overflow-y-auto max-h-[calc(100vh-280px)] pr-2">
+                <div class="animate-pulse bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="h-4 bg-slate-800 rounded w-3/4"></div>
+                    <div class="h-3 bg-slate-800 rounded w-1/2"></div>
+                    <div class="h-3 bg-slate-800 rounded w-5/6"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Column 2 & 3: Selected Event Seat Map & Booking details -->
+        <section class="lg:col-span-2 flex flex-col space-y-6">
+            
+            <!-- Seat Map and Event Details Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col flex-1 min-h-[400px]">
+                <div id="seat-map-header" class="border-b border-slate-800 pb-4 mb-6">
+                    <h3 class="text-xl font-bold text-white">No Event Selected</h3>
+                    <p class="text-slate-400 text-sm mt-1">Select an event from the list to see availability and book seats.</p>
+                </div>
+
+                <div id="seat-map-container" class="flex-1 flex flex-col items-center justify-center">
+                    <div class="text-center text-slate-500 max-w-sm">
+                        <i class="fa-solid fa-couch text-5xl mb-4 text-slate-700"></i>
+                        <p class="text-base font-semibold">Choose an Event</p>
+                        <p class="text-xs mt-1">To view seat listings, VIP categories, pricing, and live booking updates, click on any event card on the left.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User's Bookings Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-receipt text-indigo-400"></i>
+                    <span>My Bookings</span>
+                </h3>
+                <div id="bookings-container" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
+                                <th class="pb-3 font-semibold">Event</th>
+                                <th class="pb-3 font-semibold">Seat</th>
+                                <th class="pb-3 font-semibold">Price</th>
+                                <th class="pb-3 font-semibold">Status</th>
+                                <th class="pb-3 font-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-list" class="divide-y divide-slate-800 text-sm">
+                            <tr>
+                                <td colspan="5" class="py-4 text-center text-slate-500">
+                                    No bookings found for the selected user.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Register User Modal -->
+    <div id="register-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-4">Register New User</h3>
+            <form onsubmit="handleRegisterUser(event)" class="space-y-4">
+                <div>
+                    <label for="reg-username" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
+                    <input type="text" id="reg-username" required placeholder="e.g. janesmith" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label for="reg-email" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <input type="email" id="reg-email" required placeholder="e.g. jane@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="toggleRegisterModal(false)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg px-4 py-2 text-sm font-medium transition">Cancel</button>
+                    <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium shadow-lg shadow-brand-500/20 transition">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Event Modal -->
+    <div id="event-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-4">Add New Event</h3>
+            <form onsubmit="handleAddEvent(event)" class="space-y-4">
+                <div>
+                    <label for="event-name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Event Name</label>
+                    <input type="text" id="event-name" required placeholder="e.g. Music Festival" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label for="event-desc" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Description</label>
+                    <textarea id="event-desc" required placeholder="Describe the event..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="event-venue" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Venue</label>
+                    <input type="text" id="event-venue" required placeholder="e.g. City Hall" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label for="event-date" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Date</label>
+                    <input type="date" id="event-date" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="toggleEventModal(false)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg px-4 py-2 text-sm font-medium transition">Cancel</button>
+                    <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium shadow-lg shadow-brand-500/20 transition">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const API_BASE = '/api';
+        
+        let state = {
+            users: [],
+            activeUserId: null,
+            events: [],
+            selectedEvent: null,
+            seats: [],
+            selectedSeat: null,
+            bookings: []
+        };
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadUsers();
+            await loadEvents();
+        });
+
+        // Fetch user listing
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                if (response.ok) {
+                    state.users = await response.json();
+                    populateUserDropdown();
+                    if (state.users.length > 0 && !state.activeUserId) {
+                        changeUser(state.users[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading users", err);
+                showAlert("danger", "Failed to load users from backend database.");
+            }
+        }
+
+        // Populate the top-right select dropdown
+        function populateUserDropdown() {
+            const select = document.getElementById('user-select');
+            select.innerHTML = state.users.map(u => 
+                `<option value="${u.id}" ${u.id === state.activeUserId ? 'selected' : ''}>${u.username} (${u.email})</option>`
+            ).join('');
+        }
+
+        // Change active user context
+        async function changeUser(userId) {
+            state.activeUserId = parseInt(userId);
+            populateUserDropdown();
+            await loadBookings();
+        }
+
+        // Open/Close user creation modal
+        function toggleRegisterModal(show) {
+            const modal = document.getElementById('register-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('reg-username').value = '';
+                document.getElementById('reg-email').value = '';
+            }
+        }
+
+        // Handle user registration
+        async function handleRegisterUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            
+            try {
+                const res = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email })
+                });
+
+                const data = await res.json();
+                if (res.status === 201) {
+                    showAlert("success", `User "${data.username}" created successfully.`);
+                    toggleRegisterModal(false);
+                    await loadUsers();
+                    await changeUser(data.id);
+                } else {
+                    showAlert("danger", data.error || "Failed to create user.");
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Network error when creating user.");
+            }
+        }
+
+        // Fetch all events
+        async function loadEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/events`);
+                if (response.ok) {
+                    state.events = await response.json();
+                    renderEvents();
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Could not load events from backend database.");
+            }
+        }
+
+        // Render events list sidebar
+        function renderEvents() {
+            const container = document.getElementById('events-list');
+            if (state.events.length === 0) {
+                container.innerHTML = `<p class="text-slate-500 text-center text-sm py-4">No events created yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = state.events.map(ev => {
+                const isSelected = state.selectedEvent && state.selectedEvent.id === ev.id;
+                const dateFormatted = new Date(ev.date).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+                    <div onclick="selectEvent(${ev.id})" class="cursor-pointer transition group border rounded-xl p-4 ${
+                        isSelected 
+                        ? 'bg-slate-900 border-brand-500 shadow-md shadow-brand-500/5' 
+                        : 'bg-slate-900/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
+                    }">
+                        <div class="flex items-start justify-between">
+                            <h4 class="font-bold text-sm ${isSelected ? 'text-brand-400' : 'text-slate-200 group-hover:text-white'}">${ev.name}</h4>
+                            ${isSelected ? '<span class="h-2 w-2 rounded-full bg-brand-500"></span>' : ''}
+                        </div>
+                        <p class="text-xs text-slate-400 line-clamp-2 mt-1.5">${ev.description || 'No description provided.'}</p>
+                        <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+                            <span class="flex items-center space-x-1">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>${ev.venue}</span>
+                            </span>
+                            <span>${dateFormatted}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Open/Close event creation modal
+        function toggleEventModal(show) {
+            const modal = document.getElementById('event-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('event-name').value = '';
+                document.getElementById('event-desc').value = '';
+                document.getElementById('event-venue').value = '';
+                document.getElementById('event-date').value = '';
+            }
+        }
+
+        // Handle event registration
+        async function handleAddEvent(event) {
+            event.preventDefault();
+            const name = document.getElementById('event-name').value.trim();
+            const description = document.getElementById('event-desc').value.trim();
+            const venue = document.getElementById('event-venue').value.trim();
+            const date = document.getElementById('event-date').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, venue, date })
+                });
+
+                const data = await res.json();
+                if (res.status === 201) {
+                    showAlert("success", `Event "${data.name}" created. Remember to seed/add seats database if needed, or re-run seed.py for initial data.`);
+                    toggleEventModal(false);
+                    await loadEvents();
+                } else {
+                    showAlert("danger", data.error || "Failed to create event.");
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Network error when creating event.");
+            }
+        }
+
+        // Select an event
+        async function selectEvent(eventId) {
+            state.selectedEvent = state.events.find(ev => ev.id === eventId);
+            state.selectedSeat = null;
+            renderEvents();
+            renderSeatLayoutSkeleton();
+            await loadSeats(eventId);
+        }
+
+        // Render skeleton / loader for seats
+        function renderSeatLayoutSkeleton() {
+            const container = document.getElementById('seat-map-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center space-y-3 py-10 animate-pulse">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-brand-500"></i>
+                    <p class="text-sm text-slate-400">Loading seat layouts and availability...</p>
+                </div>
+            `;
+        }
+
+        // Load seats of selected event
+        async function loadSeats(eventId) {
+            try {
+                const response = await fetch(`${API_BASE}/events/${eventId}/seats`);
+                if (response.ok) {
+                    const data = await response.json();
+                    state.seats = data.seats;
+                    renderSeats();
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Failed to fetch event seat map.");
+            }
+        }
+
+        // Render seat details and grid map
+        function renderSeats() {
+            const header = document.getElementById('seat-map-header');
+            const container = document.getElementById('seat-map-container');
+            
+            const event = state.selectedEvent;
+            const dateFormatted = new Date(event.date).toLocaleDateString('en-US', {
+                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            header.innerHTML = `
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">Active Booking Map</span>
+                        <h3 class="text-2xl font-black text-white mt-2">${event.name}</h3>
+                        <p class="text-slate-400 text-xs flex items-center mt-1">
+                            <span class="mr-3"><i class="fa-solid fa-location-dot text-slate-500 mr-1"></i>${event.venue}</span>
+                            <span><i class="fa-solid fa-calendar text-slate-500 mr-1"></i>${dateFormatted}</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            if (state.seats.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-slate-500 py-10">
+                        <i class="fa-solid fa-triangle-exclamation text-4xl mb-3 text-amber-500"></i>
+                        <p class="font-semibold text-slate-300">No Seats Configured</p>
+                        <p class="text-xs mt-1 max-w-sm mx-auto">This event has no seats defined. Please run the seeding script, run the test fixtures, or insert seats manually for this event ID.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Organize seats by category
+            const vipSeats = state.seats.filter(s => s.category.toUpperCase() === 'VIP');
+            const premiumSeats = state.seats.filter(s => s.category.toUpperCase() === 'PREMIUM');
+            const regularSeats = state.seats.filter(s => s.category.toUpperCase() === 'REGULAR');
+
+            const renderSeatButton = (s) => {
+                const isSelected = state.selectedSeat && state.selectedSeat.id === s.id;
+                let btnClass = "";
+                let badgeClass = "";
+                
+                if (s.is_booked) {
+                    btnClass = "bg-slate-800/40 border-slate-800 text-slate-600 cursor-not-allowed";
+                    badgeClass = "bg-red-500/10 border-red-500/20 text-red-400";
+                } else if (isSelected) {
+                    btnClass = "bg-brand-600 border-brand-400 text-white font-bold ring-2 ring-brand-500 ring-offset-2 ring-offset-slate-950 shadow-md shadow-brand-600/30";
+                } else {
+                    // Available, color by category
+                    if (s.category.toUpperCase() === 'VIP') {
+                        btnClass = "bg-purple-950/40 border-purple-800 hover:border-purple-600 text-purple-200 hover:bg-purple-900/30";
+                    } else if (s.category.toUpperCase() === 'PREMIUM') {
+                        btnClass = "bg-blue-950/40 border-blue-800 hover:border-blue-600 text-blue-200 hover:bg-blue-900/30";
+                    } else {
+                        btnClass = "bg-emerald-950/40 border-emerald-900 hover:border-emerald-700 text-emerald-200 hover:bg-emerald-900/20";
+                    }
+                }
+
+                return `
+                    <button 
+                        onclick="${s.is_booked ? '' : `selectSeat(${s.id})`}" 
+                        class="w-12 h-12 rounded-lg border flex flex-col items-center justify-center text-xs transition relative font-medium ${btnClass}"
+                        title="${s.category} Seating - Seat ${s.seat_number} - ₹${s.price} ${s.is_booked ? '(Booked)' : '(Available)'}"
+                        ${s.is_booked ? 'disabled' : ''}>
+                        <span>${s.seat_number}</span>
+                        <span class="text-[8px] opacity-75 mt-0.5">₹${s.price}</span>
+                        ${s.is_booked ? '<i class="fa-solid fa-lock text-[8px] absolute top-1 right-1 text-slate-500"></i>' : ''}
+                    </button>
+                `;
+            };
+
+            container.innerHTML = `
+                <div class="w-full flex flex-col space-y-6">
+                    <!-- Stage Screen Visual -->
+                    <div class="w-full text-center py-1.5 bg-slate-800/40 border-b border-slate-700 rounded-b-xl relative">
+                        <span class="text-[9px] uppercase font-bold tracking-widest text-slate-400">STAGE / FRONT SCREEN</span>
+                    </div>
+
+                    <!-- Seat Grids -->
+                    <div class="flex flex-col space-y-6 max-w-lg w-full mx-auto">
+                        ${vipSeats.length > 0 ? `
+                            <div>
+                                <h4 class="text-xs uppercase font-bold tracking-wider text-purple-400 mb-2 text-center flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-star text-[10px]"></i>
+                                    <span>VIP Zone (₹${vipSeats[0].price})</span>
+                                </h4>
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    ${vipSeats.map(renderSeatButton).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${premiumSeats.length > 0 ? `
+                            <div>
+                                <h4 class="text-xs uppercase font-bold tracking-wider text-blue-400 mb-2 text-center flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-award text-[10px]"></i>
+                                    <span>Premium Rows (₹${premiumSeats[0].price})</span>
+                                </h4>
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    ${premiumSeats.map(renderSeatButton).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${regularSeats.length > 0 ? `
+                            <div>
+                                <h4 class="text-xs uppercase font-bold tracking-wider text-emerald-400 mb-2 text-center flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-couch text-[10px]"></i>
+                                    <span>Regular Seating (₹${regularSeats[0].price})</span>
+                                </h4>
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    ${regularSeats.map(renderSeatButton).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Legend & Summary Section -->
+                    <div class="border-t border-slate-800 pt-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-3.5 h-3.5 rounded bg-purple-950/40 border border-purple-800"></span>
+                                <span>VIP</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-3.5 h-3.5 rounded bg-blue-950/40 border border-blue-800"></span>
+                                <span>Premium</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-3.5 h-3.5 rounded bg-emerald-950/40 border border-emerald-900"></span>
+                                <span>Regular</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5">
+                                <span class="w-3.5 h-3.5 rounded bg-slate-800/40 border border-slate-800"></span>
+                                <span>Booked</span>
+                            </span>
+                        </div>
+
+                        <!-- Reservation Booking Panel -->
+                        <div id="booking-details-panel" class="w-full md:w-auto">
+                            ${state.selectedSeat ? `
+                                <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3 flex items-center justify-between gap-6 w-full md:w-auto">
+                                    <div class="text-left">
+                                        <p class="text-[10px] uppercase font-bold tracking-wider text-brand-400">Selected Seat</p>
+                                        <p class="text-sm font-bold text-white">${state.selectedSeat.seat_number} (${state.selectedSeat.category})</p>
+                                        <p class="text-xs text-slate-300">₹${state.selectedSeat.price}</p>
+                                    </div>
+                                    <button 
+                                        onclick="handleCreateBooking()" 
+                                        class="bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg text-xs px-4 py-2.5 shadow-lg shadow-brand-500/10 flex items-center space-x-1.5 transition">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>Confirm Booking</span>
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="text-center md:text-right py-2 text-xs text-slate-500">
+                                    Click any available seat to prepare a booking.
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Select a seat
+        function selectSeat(seatId) {
+            state.selectedSeat = state.seats.find(s => s.id === seatId);
+            renderSeats();
+        }
+
+        // Create booking call
+        async function handleCreateBooking() {
+            if (!state.activeUserId) {
+                showAlert("danger", "Please register or select a user first.");
+                return;
+            }
+            if (!state.selectedEvent || !state.selectedSeat) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: state.activeUserId,
+                        event_id: state.selectedEvent.id,
+                        seat_id: state.selectedSeat.id
+                    })
+                });
+
+                const data = await res.json();
+                if (res.status === 201) {
+                    showAlert("success", `Booking #${data.id} created successfully. Status: PENDING.`);
+                    state.selectedSeat = null;
+                    await loadSeats(state.selectedEvent.id);
+                    await loadBookings();
+                } else {
+                    showAlert("danger", data.error || "Failed to reserve seat.");
+                    // Reload seats to fetch updated availability
+                    await loadSeats(state.selectedEvent.id);
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Network error occurred when reserving seat.");
+            }
+        }
+
+        // Fetch bookings for active user
+        async function loadBookings() {
+            if (!state.activeUserId) return;
+            try {
+                const response = await fetch(`${API_BASE}/bookings?user_id=${state.activeUserId}`);
+                if (response.ok) {
+                    state.bookings = await response.json();
+                    renderBookings();
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Failed to retrieve user bookings.");
+            }
+        }
+
+        // Render bookings table
+        function renderBookings() {
+            const list = document.getElementById('bookings-list');
+            if (state.bookings.length === 0) {
+                list.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-6 text-center text-slate-500">
+                            No bookings found for the selected user. Choose a seat above to book!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            list.innerHTML = state.bookings.map(b => {
+                let statusBadge = "";
+                let actions = "";
+
+                if (b.status === 'PENDING') {
+                    statusBadge = `<span class="bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium px-2 py-0.5 rounded-full text-xs">Pending</span>`;
+                    actions = `
+                        <div class="flex items-center space-x-2">
+                            <button onclick="simulatePayment(${b.id}, 'SUCCESS')" class="text-xs bg-emerald-950 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/60 font-semibold px-2 py-1 rounded transition">
+                                <i class="fa-solid fa-circle-check mr-1 text-[10px]"></i>Success
+                            </button>
+                            <button onclick="simulatePayment(${b.id}, 'FAILED')" class="text-xs bg-rose-950 border border-rose-800 text-rose-400 hover:bg-rose-900/60 font-semibold px-2 py-1 rounded transition">
+                                <i class="fa-solid fa-circle-xmark mr-1 text-[10px]"></i>Fail
+                            </button>
+                            <button onclick="cancelBooking(${b.id})" class="text-xs text-slate-400 hover:text-red-400 transition" title="Cancel Booking">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                } else if (b.status === 'CONFIRMED') {
+                    statusBadge = `<span class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium px-2 py-0.5 rounded-full text-xs">Confirmed</span>`;
+                    actions = `
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-500 italic"><i class="fa-solid fa-check-double text-emerald-500 mr-1"></i>Paid</span>
+                            <button onclick="cancelBooking(${b.id})" class="text-xs text-slate-400 hover:text-red-400 transition" title="Cancel & Refund">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    statusBadge = `<span class="bg-slate-800 border border-slate-700 text-slate-500 font-medium px-2 py-0.5 rounded-full text-xs">Cancelled</span>`;
+                    actions = `<span class="text-xs text-slate-500 italic">None</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3.5 font-bold text-slate-300">${b.event.name}</td>
+                        <td class="py-3.5">
+                            <span class="text-slate-200 font-semibold">${b.seat.seat_number}</span>
+                            <span class="text-[10px] text-slate-500 block">${b.seat.category}</span>
+                        </td>
+                        <td class="py-3.5 text-slate-300">₹${b.seat.price}</td>
+                        <td class="py-3.5">${statusBadge}</td>
+                        <td class="py-3.5">${actions}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Simulate payment success/failure
+        async function simulatePayment(bookingId, status) {
+            try {
+                const res = await fetch(`${API_BASE}/payments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        booking_id: bookingId,
+                        simulate_status: status
+                    })
+                });
+
+                const data = await res.json();
+                if (res.status === 201) {
+                    if (status === 'SUCCESS') {
+                        showAlert("success", `Payment SUCCESS. Booking #${bookingId} is now CONFIRMED.`);
+                    } else {
+                        showAlert("warning", `Payment FAILED. Booking #${bookingId} CANCELLED. Seat released.`);
+                    }
+                    if (state.selectedEvent) {
+                        await loadSeats(state.selectedEvent.id);
+                    }
+                    await loadBookings();
+                } else {
+                    showAlert("danger", data.error || "Failed to simulate payment.");
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Network error occurred when simulating payment.");
+            }
+        }
+
+        // Cancel / release booking
+        async function cancelBooking(bookingId) {
+            if (!confirm("Are you sure you want to cancel this booking and release the seat?")) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/bookings/${bookingId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await res.json();
+                if (res.status === 200) {
+                    showAlert("success", `Booking #${bookingId} cancelled successfully. Seat released.`);
+                    if (state.selectedEvent) {
+                        await loadSeats(state.selectedEvent.id);
+                    }
+                    await loadBookings();
+                } else {
+                    showAlert("danger", data.error || "Failed to cancel booking.");
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert("danger", "Network error when cancelling booking.");
+            }
+        }
+
+        // Helper: Alerts control
+        let alertTimeout = null;
+        function showAlert(type, message) {
+            const container = document.getElementById('alert-container');
+            const banner = document.getElementById('alert-banner');
+            const icon = document.getElementById('alert-icon');
+            const msgText = document.getElementById('alert-message');
+
+            container.classList.remove('hidden');
+            msgText.innerText = message;
+
+            if (alertTimeout) clearTimeout(alertTimeout);
+
+            // Clean previous styles
+            banner.className = "flex items-center justify-between p-4 rounded-xl border";
+
+            if (type === 'success') {
+                banner.classList.add('bg-emerald-950/20', 'border-emerald-800', 'text-emerald-300');
+                icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i>`;
+            } else if (type === 'warning') {
+                banner.classList.add('bg-amber-950/20', 'border-amber-800', 'text-amber-300');
+                icon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-400"></i>`;
+            } else {
+                // Danger
+                banner.classList.add('bg-rose-950/20', 'border-rose-800', 'text-rose-300');
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i>`;
+            }
+
+            // Auto-hide alert after 8 seconds
+            alertTimeout = setTimeout(() => {
+                dismissAlert();
+            }, 8000);
+        }
+
+        function dismissAlert() {
+            const container = document.getElementById('alert-container');
+            container.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
